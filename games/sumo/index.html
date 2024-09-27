@@ -1,0 +1,33 @@
+<!-- games/sumo/index.html -->
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Sumo</title>
+        <link rel="stylesheet" href="/css/styles.css" />
+    </head>
+    <body>
+        <div id="header"></div>
+
+        <main>
+            <div class="game-container">
+                <div class="scoreboard">
+                    <span id="player1Score">Player 1: 0</span> |
+                    <span id="player2Score">Player 2: 0</span>
+                </div>
+                <div class="game-full-width">
+                    <canvas id="gameCanvas"></canvas>
+                </div>
+                <div id="statusInfo"></div>
+                <div id="controlInfo"></div>
+                <button id="modeToggle" class="btn">
+                    Switch to 1-Player Mode
+                </button>
+            </div>
+        </main>
+
+        <div id="footer"></div>
+        <script src="/js/common.js"></script>
+        <script src="sumo.js"></script>
+    </body>
+</html>

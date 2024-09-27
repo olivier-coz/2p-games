@@ -1,0 +1,39 @@
+<!-- games/word-game/index.html -->
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Word Game</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+    <div id="header"></div>
+
+    <main>
+        <div id="wordGame" class="game-container">
+            <div class="scoreboard">
+                <span id="player1Score">Player 1: 0</span>
+                <span id="player2Score">Player 2: 0</span>
+            </div>
+            <div id="gameArea">
+                <div id="letters" class="letters"></div>
+                <div id="message" class="message"></div>
+                <div id="inputContainer" style="display:none;">
+                    <input type="text" id="wordInput" placeholder="Enter your word" />
+                    <button id="submitBtn">Submit</button>
+                </div>
+                <div id="winnerMessage"></div>
+            </div>
+            <div id="statusInfo"></div>
+            <div id="controlInfo"></div>
+            <button id="modeToggle" class="btn">
+                Switch to 1-Player Mode
+            </button>
+        </div>
+    </main>
+
+    <div id="footer"></div>
+    <script src="/js/common.js"></script>
+    <script src="words.js"></script>
+</body>
+</html>

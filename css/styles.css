@@ -1,0 +1,236 @@
+/* Root Variables */
+:root {
+    --color-background: #F9FAFB;
+    --color-text: #1B1818;
+
+    --body-bg-color: hsl(210, 20%, 98%);
+    --color-primary: #3498db;
+    --color-secondary: #e74c3c;
+    --color-accent: #aaaaaa;
+    --color-muted: #555555;
+}
+
+/* Dark Mode Variables */
+body.dark-mode {
+    --color-background: #292929;
+    --color-text: #DBDBDB;
+    --color-primary: #3498db;
+    --color-secondary: #e74c3c;
+    --color-muted: #cccccc;
+}
+
+/* Base Body Styles */
+body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    line-height: 1.6;
+    font-size: 18px;
+    display: flex;
+    min-height: 100vh;
+    margin: 0;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Headers */
+h1,
+h2,
+h3 {
+    line-height: 1.2;
+}
+
+/* Header Section */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-background);
+}
+
+/* Dark Mode Toggle Button */
+#dark-mode-toggle {
+    margin-right: 10px;
+}
+
+/* Navbar */
+nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+}
+
+nav ul li {
+    margin-right: 20px;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: var(--color-text);
+    padding: 0px 15px;
+    display: inline-block;
+}
+
+nav ul li a:hover {
+    color: var(--color-primary);
+}
+
+/* Active Page Highlight */
+nav ul li a.active {
+    border-bottom: 2px solid var(--color-primary);
+    color: var(--color-primary);
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 0;
+    background-color: var(--color-background);
+    color: var(--color-text);
+    width: 100%;
+    margin-top: auto;
+}
+
+/* Footer Links */
+footer a {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+footer a:hover {
+    color: var(--color-secondary);
+}
+
+/* Game Container */
+.game-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    text-align: center;
+    margin: 0 auto;
+}
+
+/* Scoreboard */
+.scoreboard {
+    font-size: 24px;
+    margin-top: 10px;
+    color: var(--color-text);
+}
+
+/* Status Information */
+#statusInfo {
+    font-size: 20px;
+    margin-top: 10px;
+    color: var(--color-primary);
+}
+
+/* Control Information */
+#controlInfo {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: var(--color-text);
+}
+
+/* Game Rules */
+.game-rules {
+    margin-top: 20px;
+    text-align: left;
+    color: var(--color-text);
+}
+
+.game-rules h2 {
+    margin-bottom: 10px;
+}
+
+/* Word Game Specific Styles */
+
+/* Target the letters display in the word game */
+#wordGame #letters {
+    font-size: 48px; /* Adjust the size as needed */
+    margin: 20px 0;
+}
+
+/* Target the message element in the word game */
+#wordGame #message {
+    font-size: 24px;
+    margin: 10px 0;
+}
+
+/* Style the input container in the word game */
+#wordGame #inputContainer {
+    margin: 20px 0;
+}
+
+/* Increase the size of the input field */
+#wordGame #wordInput {
+    font-size: 24px;
+    padding: 10px;
+    width: 300px; /* Adjust the width as needed */
+    box-sizing: border-box;
+}
+
+/* Increase the size of the submit button */
+#wordGame #submitBtn {
+    font-size: 24px;
+    padding: 10px 20px;
+    margin-left: 10px;
+}
+
+/* Adjust the winner message font size */
+#wordGame #winnerMessage {
+    font-size: 32px;
+    margin: 20px 0;
+    color: var(--color-primary);
+}
+
+
+/* Math Game Specific Styles */
+
+/* Target the equation display in the math game */
+#mathGame #equation {
+    font-size: 48px; /* Increased size */
+    margin: 20px 0;
+}
+
+/* Target the answer buttons in the math game */
+#mathGame .answers {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+#mathGame .answer-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+#mathGame .answer-row:first-child {
+    /* Center the single button */
+    justify-content: center;
+}
+
+#mathGame .answer-row:last-child button {
+    margin: 0 10px;
+}
+
+#mathGame .answer-btn {
+    font-size: 32px; /* Increased size */
+    padding: 10px 20px;
+    min-width: 100px;
+}
+
+/* Adjust the message font size */
+#mathGame #message {
+    font-size: 24px;
+    margin: 10px 0;
+}
+
+/* Adjust the winner message font size */
+#mathGame #winnerMessage {
+    font-size: 32px;
+    margin: 20px 0;
+    color: var(--color-primary);
+}

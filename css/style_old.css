@@ -1,0 +1,79 @@
+/* styles.css */
+:root {
+    --color-background: #ffffff;
+    --color-text: #444444;
+    --color-primary: #3498db;
+    --color-secondary: #e74c3c;
+    --color-accent: #aaaaaa;
+    --color-muted: #555555;
+
+    /* Additional generic colors as needed */
+}
+
+body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+
+    margin: 40px auto;
+    max-width: 650px;
+    line-height: 1.6;
+    font-size: 18px;
+    padding: 0 10px;
+}
+
+h1,
+h2,
+h3 {
+    line-height: 1.2;
+}
+
+body.dark-mode {
+    --color-background: #121212;
+    --color-text: #e0e0e0;
+    --color-primary: #9839cb;
+    --color-secondary: #fdcc3a;
+    --color-muted: #cccccc;
+    /* Adjust other variables if needed */
+}
+
+/* Additional styles for navbars, footers, etc. */
+
+/* Ensure the game container is centered and takes up only the available space */
+
+.game-container {
+    width: 99vw; /* 98% of the viewport width */
+    margin-left: calc(-49.5vw + 50%); /* Center the 98vw content */
+    margin-right: calc(-49.5 + 50%); /* Prevent horizontal scrollbars */
+    text-align: center; /* Center the canvas inside the container */
+    overflow: hidden; /* Prevent overflow */
+}
+
+.scoreboard {
+    font-size: 24px;
+    margin-bottom: 10px;
+    color: var(--color-text);
+}
+
+#statusInfo {
+    font-size: 20px;
+    margin-top: 0px;
+    color: var(--color-primary);
+}
+
+#controlInfo {
+    font-size: 16px;
+    margin-top: 0px;
+    color: var(--color-text);
+}
+
+.game-rules {
+    margin-top: 20px;
+    text-align: left;
+    color: var(--color-text);
+}
+
+.game-rules h2 {
+    margin-bottom: 10px;
+}
+
+/* Etc. */
