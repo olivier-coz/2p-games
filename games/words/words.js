@@ -13,7 +13,7 @@ function getCSSColors() {
   };
 }
 
-// Listen for theme changes (if you have a theme switcher)
+// Listen for theme changes
 document.addEventListener("themeChanged", function () {
   getCSSColors();
 });
@@ -21,10 +21,10 @@ document.addEventListener("themeChanged", function () {
 // Game variables
 let letters = [];
 let gameActive = false;
-let letterDisplayTime = 15;
+let countdown = 0;
 let wordDictionary = null;
 let usedWords = new Set();
-let vsMode = true; // Start with 2-player mode by default
+let vsMode = false; // Start with 2-player mode by default
 let scores = [0, 0]; // Scores for Player 1 and Player 2
 let currentPlayer = 0;
 let playerTimers = [45, 45];
@@ -49,8 +49,6 @@ let lettersElement = document.getElementById("letters");
 let inputContainer = document.getElementById("inputContainer");
 let wordInput = document.getElementById("wordInput");
 let submitBtn = document.getElementById("submitBtn");
-let winnerMessage = document.getElementById("winnerMessage");
-let modeToggleBtn = document.getElementById("modeToggle");
 
 // Initialize the game after loading the word dictionary
 fetch("words.txt")
@@ -83,13 +81,17 @@ function init() {
     }
   });
 
-  modeToggleBtn.addEventListener("click", () => {
-    vsMode = !vsMode;
-    modeToggleBtn.textContent = vsMode
-      ? "Switch to 1-Player Mode"
-      : "Switch to 2-Player Mode";
-    resetGame();
+  // Listen for key presses to start/restart the game
+  document.addEventListener("keydown", function (e) {
+    // Restart game
+    if (!gameActive && (e.key === "r" || e.key === "R")) {
+      resetGame();
+      startCountdown();
+      return;
+    }
   });
+
+  statusInfo.textContent = "Press R to Start the Game";
 }
 
 function resetGame() {
@@ -97,25 +99,41 @@ function resetGame() {
   letters = [];
   gameActive = false;
   usedWords = new Set();
-  playerTimers = vsMode ? [45, 45] : [60]; // In one-player mode, total time is 60 seconds
+  playerTimers = vsMode ? [45, 45] : [60];
   scores = [0, 0];
   currentPlayer = 0;
-  winnerMessage.textContent = "";
+  winnerMessage.innerHTML = "&nbsp;";
   wordInput.value = "";
   inputContainer.style.display = "none";
-  messageElement.textContent = "";
+  messageElement.innerHTML = "&nbsp;";
   clearInterval(countdownInterval);
   clearInterval(gameTimer);
+  statusInfo.textContent = "Press R to Start the Game";
+  displayControls();
+  updateScoreboard();
+}
+
+function startCountdown() {
+  countdown = 15;
+  gameActive = false;
   generateLetters();
   displayLetters();
-  setTimeout(() => {
-    startGame();
-  }, letterDisplayTime * 1000);
-  statusInfo.textContent = `Game will start in ${letterDisplayTime} seconds.`;
+  statusInfo.textContent = `Game starts in ${countdown} seconds.`;
+
+  countdownInterval = setInterval(function () {
+    countdown--;
+    if (countdown > 0) {
+      statusInfo.textContent = `Game starts in ${countdown} seconds.`;
+    } else {
+      clearInterval(countdownInterval);
+      statusInfo.textContent = "Game started!";
+      winnerMessage.textContent = "";
+      startGame();
+    }
+  }, 1000);
 }
 
 function generateLetters() {
-  // Generate letters (same logic as before)
   const vowelsBin = {
     A: 9,
     E: 12,
@@ -183,7 +201,6 @@ function generateLetters() {
 
 function displayLetters() {
   lettersElement.textContent = letters.join(" ");
-  statusInfo.textContent = `Only 5-letter words or more. Game will start in ${letterDisplayTime} seconds.`;
 }
 
 function startGame() {
@@ -203,9 +220,9 @@ function startGame() {
 
 function startPlayerTimer() {
   updateTimers();
-  countdownInterval = setInterval(() => {
+  gameTimer = setInterval(() => {
     if (!gameActive) {
-      clearInterval(countdownInterval);
+      clearInterval(gameTimer);
       return;
     }
 
@@ -216,7 +233,8 @@ function startPlayerTimer() {
       gameActive = false;
       winnerMessage.textContent = `${players[currentPlayer === 0 ? 1 : 0].name} Wins!`;
       inputContainer.style.display = "none";
-      clearInterval(countdownInterval);
+      clearInterval(gameTimer);
+      statusInfo.textContent = "Press R to Restart the Game";
     }
   }, 1000);
 }
@@ -250,6 +268,7 @@ function startGameTimer() {
       winnerMessage.textContent = `Time's up! Your score: ${scores[0]}`;
       inputContainer.style.display = "none";
       clearInterval(gameTimer);
+      statusInfo.textContent = "Press R to Restart the Game";
     }
   }, 1000);
 }
@@ -273,10 +292,8 @@ function submitWord() {
     updateScoreboard();
     if (vsMode) {
       // Switch to other player
-      clearInterval(countdownInterval);
       currentPlayer = currentPlayer === 0 ? 1 : 0;
       statusInfo.textContent = `${players[currentPlayer].name}'s turn!`;
-      startPlayerTimer();
     }
   } else {
     // Invalid word, apply 6-second penalty
@@ -288,7 +305,8 @@ function submitWord() {
         gameActive = false;
         winnerMessage.textContent = `${players[currentPlayer === 0 ? 1 : 0].name} Wins!`;
         inputContainer.style.display = "none";
-        clearInterval(countdownInterval);
+        clearInterval(gameTimer);
+        statusInfo.textContent = "Press R to Restart the Game";
       }
     } else {
       playerTimers[0] -= 6;
@@ -298,6 +316,7 @@ function submitWord() {
         winnerMessage.textContent = `Time's up! Your score: ${scores[0]}`;
         inputContainer.style.display = "none";
         clearInterval(gameTimer);
+        statusInfo.textContent = "Press R to Restart the Game";
       }
     }
   }
@@ -336,16 +355,16 @@ function updateScoreboard() {
 function displayControls() {
   if (vsMode) {
     controlInfo.innerHTML = `
-            <strong>Instructions:</strong><br>
-            Players take turns to submit 4 letter words or more. The player who runs out of time first loses.<br>
-            <strong>Penalty:</strong> Invalid words cost 6 seconds.<br>
-        `;
+      <strong>Instructions:</strong><br>
+      Players take turns to submit english 4-letter words or more. The first player who runs out of time loses.<br>
+      <strong>Penalty:</strong> Invalid words cost 6 seconds.<br>
+    `;
   } else {
     controlInfo.innerHTML = `
-            <strong>Instructions:</strong><br>
-            Enter as many valid words as you can before time runs out.<br>
-            <strong>Penalty:</strong> Invalid words cost 6 seconds.<br>
-        `;
+      <strong>Instructions:</strong><br>
+      Enter as many valid words as you can before time runs out.<br>
+      <strong>Penalty:</strong> Invalid words cost 6 seconds.<br>
+    `;
   }
 }
 

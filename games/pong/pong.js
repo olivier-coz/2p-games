@@ -1,53 +1,24 @@
-// Get canvas and context
+// pong.js
+
+// Constants
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Variables for CSS colors
+// HTML Elements
+const statusInfo = document.getElementById("statusInfo");
+const controlInfo = document.getElementById("controlInfo");
+
+// Variables
 let colors = {};
+let gameActive = false;
+let vsMode = false;
+let autoRestart = false;
+let keyboardLayout = "qwerty";
+let keyBindings = getKeyBindings(keyboardLayout);
+let countdown = 0;
+let countdownInterval;
 
-// Get CSS variables for colors
-function getCSSColors() {
-  const rootStyles = getComputedStyle(document.body);
-  colors = {
-    background: rootStyles.getPropertyValue("--color-background").trim(),
-    text: rootStyles.getPropertyValue("--color-text").trim(),
-    primary: rootStyles.getPropertyValue("--color-primary").trim(),
-    secondary: rootStyles.getPropertyValue("--color-secondary").trim(),
-    accent: rootStyles.getPropertyValue("--color-accent").trim(),
-    muted: rootStyles.getPropertyValue("--color-muted").trim(),
-  };
-}
-
-// Listen for dark mode changes
-document.addEventListener("themeChanged", function () {
-  getCSSColors();
-});
-
-getCSSColors(); // Initialize colors
-
-// Responsive canvas setup
-function resizeCanvas() {
-  canvas.width = window.innerWidth * 0.9;
-  canvas.height = window.innerHeight * 0.7;
-
-  // Update game elements based on new size
-  paddleHeight = canvas.height / 6;
-  paddleWidth = canvas.width / 80;
-  ball.radius = canvas.width / 100;
-
-  // Set paddles size
-  players[0].width = paddleWidth;
-  players[0].height = paddleHeight;
-
-  players[1].width = paddleWidth;
-  players[1].height = paddleHeight;
-
-  // Reset positions
-  resetPositions();
-}
-window.addEventListener("resize", resizeCanvas);
-
-// Game elements
+// Game Elements
 let ball = {
   x: 0,
   y: 0,
@@ -71,7 +42,7 @@ let players = [
     up: false,
     down: false,
     name: "Player 1",
-    color: "", // Will be set later
+    color: "",
   },
   {
     x: 0,
@@ -82,102 +53,51 @@ let players = [
     up: false,
     down: false,
     name: "Player 2",
-    color: "", // Will be set later
+    color: "",
   },
 ];
 
-// Game state variables
-let gameActive = false; // Game starts inactive
-let countdown = 0; // Countdown timer
-let countdownInterval; // Interval for countdown
+// Fetch CSS colors
+function getCSSColors() {
+  const rootStyles = getComputedStyle(document.body);
+  colors = {
+    background: rootStyles.getPropertyValue("--color-background").trim(),
+    text: rootStyles.getPropertyValue("--color-text").trim(),
+    primary: rootStyles.getPropertyValue("--color-primary").trim(),
+    secondary: rootStyles.getPropertyValue("--color-secondary").trim(),
+    accent: rootStyles.getPropertyValue("--color-accent").trim(),
+    muted: rootStyles.getPropertyValue("--color-muted").trim(),
+  };
 
-// Event listeners for key presses
-document.addEventListener("keydown", keyDownHandler);
-document.addEventListener("keyup", keyUpHandler);
-
-function keyDownHandler(e) {
-  switch (e.key) {
-    // Player 1 controls (W/S keys)
-    case "w":
-    case "W":
-      players[0].up = true;
-      break;
-    case "s":
-    case "S":
-      players[0].down = true;
-      break;
-    // Player 2 controls (Arrow keys)
-    case "ArrowUp":
-      players[1].up = true;
-      break;
-    case "ArrowDown":
-      players[1].down = true;
-      break;
-    // Restart game
-    case "r":
-    case "R":
-      resetPositions();
-      startCountdown();
-      break;
-  }
+  // Update player colors
+  players[0].color = colors.secondary; // Player 1 color
+  players[1].color = colors.primary; // Player 2 color
 }
 
-function keyUpHandler(e) {
-  switch (e.key) {
-    // Player 1 controls (W/S keys)
-    case "w":
-    case "W":
-      players[0].up = false;
-      break;
-    case "s":
-    case "S":
-      players[0].down = false;
-      break;
-    // Player 2 controls (Arrow keys)
-    case "ArrowUp":
-      players[1].up = false;
-      break;
-    case "ArrowDown":
-      players[1].down = false;
-      break;
-  }
-}
+// Responsive canvas setup
+function resizeCanvas() {
+  canvas.width = window.innerWidth * 0.9;
+  canvas.height = window.innerHeight * 0.7;
 
-// Mode toggle button
-const modeToggleBtn = document.getElementById("modeToggle");
-let vsAI = true; // Start with AI mode
+  // Update game elements based on new size
+  paddleHeight = canvas.height / 6;
+  paddleWidth = canvas.width / 80;
+  ball.radius = canvas.width / 100;
 
-modeToggleBtn.addEventListener("click", () => {
-  vsAI = !vsAI;
-  modeToggleBtn.textContent = vsAI
-    ? "Switch to 2-Player Mode"
-    : "Switch to 1-Player Mode";
-  resetGame();
-});
+  // Set paddles size
+  players[0].width = paddleWidth;
+  players[0].height = paddleHeight;
 
-// Initialize game
-function init() {
-  resizeCanvas();
-  getCSSColors();
-  players[0].color = colors.secondary; // Using secondary color for Player 1
-  players[1].color = colors.primary; // Using primary color for Player 2
-  resetGame();
-  startCountdown(); // Start the countdown at the beginning
-  draw();
-}
+  players[1].width = paddleWidth;
+  players[1].height = paddleHeight;
 
-// Reset game
-function resetGame() {
-  players[0].score = 0;
-  players[1].score = 0;
-  updateScoreboard();
+  // Reset positions
   resetPositions();
-  displayControls();
 }
 
 // Reset positions
 function resetPositions() {
-  // Reset positions
+  // Reset player positions
   players[0].x = 0;
   players[0].y = (canvas.height - paddleHeight) / 2;
 
@@ -185,8 +105,93 @@ function resetPositions() {
   players[1].y = (canvas.height - paddleHeight) / 2;
 
   resetBall();
+
+  statusInfo.innerHTML = "";
+  controlInfo.innerHTML = "";
+  displayControls();
 }
 
+// Reset ball position and speed
+function resetBall() {
+  ball.x = canvas.width / 2;
+  ball.y = canvas.height / 2;
+  ball.speed = 8;
+  // Random initial direction
+  let angle = (Math.random() * Math.PI) / 2 - Math.PI / 4;
+  let direction = Math.random() > 0.5 ? 1 : -1;
+  ball.velocityX = direction * ball.speed * Math.cos(angle);
+  ball.velocityY = ball.speed * Math.sin(angle);
+}
+
+// Display controls
+function displayControls() {
+  if (!vsMode) {
+    controlInfo.innerHTML = `
+      <strong>Player 1 Controls:</strong> ${keyBindings.player1.up.toUpperCase()}/${keyBindings.player1.down.toUpperCase()} to move.<br>
+      AI controls Player 2.
+    `;
+  } else {
+    controlInfo.innerHTML = `
+      <strong>Player 1 Controls:</strong> ${keyBindings.player1.up.toUpperCase()}/${keyBindings.player1.down.toUpperCase()} to move.<br>
+      <strong>Player 2 Controls:</strong> Arrow keys to move,
+    `;
+  }
+}
+
+// Update scoreboard
+function updateScoreboard() {
+  document.getElementById("player1Score").textContent =
+    `${players[0].name}: ${players[0].score}`;
+  document.getElementById("player2Score").textContent =
+    `${players[1].name}: ${players[1].score}`;
+}
+
+// Reset scores
+function resetScoreboard() {
+  players[0].score = 0;
+  players[1].score = 0;
+  updateScoreboard();
+}
+
+// Reset game
+function resetGame() {
+  resetScoreboard();
+  resetPositions();
+  displayControls();
+
+  gameActive = false;
+  countdown = 0;
+  statusInfo.innerHTML = "...";
+
+  if (autoRestart) {
+    startCountdown();
+  } else {
+    statusInfo.innerHTML = "Press R to Start the Game";
+  }
+}
+
+// Start countdown before the game starts
+function startCountdown() {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+  }
+  countdown = 3;
+  statusInfo.innerHTML = `Game starts in ${countdown}...`;
+  gameActive = false; // Ensure game is inactive during countdown
+  countdownInterval = setInterval(function () {
+    countdown--;
+    if (countdown > 0) {
+      statusInfo.innerHTML = `Game starts in ${countdown}...`;
+    } else {
+      clearInterval(countdownInterval);
+      countdown = 0;
+      statusInfo.innerHTML = "...";
+      gameActive = true; // Re-enable the game after countdown
+    }
+  }, 1000);
+}
+
+// Draw game elements
 function draw() {
   // Clear the canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -213,19 +218,16 @@ function draw() {
 
   // Move paddles and ball only if game is active
   if (gameActive) {
-    // Move paddles
     movePaddles();
-
-    // Move ball
     moveBall();
   }
 
   // Display countdown
-  if (countdown > 0) {
-    ctx.font = `${canvas.height / 5}px Arial`;
+  if (!gameActive && countdown > 0) {
+    ctx.font = "bold 72px Arial";
     ctx.fillStyle = colors.text;
     ctx.textAlign = "center";
-    ctx.fillText(countdown, canvas.width / 2, canvas.height / 2);
+    ctx.fillText(countdown, canvas.width / 2, canvas.height / 2.1);
   }
 
   requestAnimationFrame(draw);
@@ -237,7 +239,7 @@ function drawPaddle(x, y, width, height, color) {
 }
 
 function drawBall(x, y, radius) {
-  ctx.fillStyle = colors.accent;
+  ctx.fillStyle = colors.text;
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI * 2);
   ctx.closePath();
@@ -254,49 +256,36 @@ function drawNet() {
   ctx.setLineDash([]);
 }
 
+// Move paddles
 function movePaddles() {
-  if (!gameActive) return;
+  players.forEach((player, index) => {
+    if (index === 1 && !vsMode) {
+      // AI logic for Player 2
+      let predictedY = predictBallY();
+      let aiSpeed = 5;
+      let distance = predictedY - (player.y + player.height / 2);
+      let threshold = player.height / 3;
 
-  // Player 1 controls
-  if (players[0].up && players[0].y > 0) {
-    players[0].y -= 7;
-  } else if (
-    players[0].down &&
-    players[0].y < canvas.height - players[0].height
-  ) {
-    players[0].y += 7;
-  }
-
-  if (vsAI) {
-    // AI for Player 2
-    let predictedY = predictBallY();
-    let aiSpeed = 7;
-    let distance = predictedY - (players[1].y + players[1].height / 2);
-    let threshold = players[1].height / 3; // AI doesn't move if within a third of paddle height
-
-    if (Math.abs(distance) > threshold) {
-      if (distance > 0 && players[1].y + players[1].height < canvas.height) {
-        players[1].y += aiSpeed;
-      } else if (distance < 0 && players[1].y > 0) {
-        players[1].y -= aiSpeed;
+      if (Math.abs(distance) > threshold) {
+        if (distance > 0 && player.y + player.height < canvas.height) {
+          player.y += aiSpeed;
+        } else if (distance < 0 && player.y > 0) {
+          player.y -= aiSpeed;
+        }
+      }
+    } else {
+      // Human player movement
+      if (player.up && player.y > 0) {
+        player.y -= 7;
+      } else if (player.down && player.y < canvas.height - player.height) {
+        player.y += 7;
       }
     }
-  } else {
-    // Player 2 controls
-    if (players[1].up && players[1].y > 0) {
-      players[1].y -= 7;
-    } else if (
-      players[1].down &&
-      players[1].y < canvas.height - players[1].height
-    ) {
-      players[1].y += 7;
-    }
-  }
+  });
 }
 
+// Move ball
 function moveBall() {
-  if (!gameActive) return;
-
   ball.x += ball.velocityX;
   ball.y += ball.velocityY;
 
@@ -340,16 +329,27 @@ function moveBall() {
     players[1].score++;
     updateScoreboard();
     resetPositions();
-    startCountdown();
+    if (autoRestart) {
+      startCountdown();
+    } else {
+      gameActive = false;
+      statusInfo.innerHTML = `${players[1].name} Scores! Press 'R' to restart.`;
+    }
   } else if (ball.x + ball.radius > canvas.width) {
     // Player 1 scores
     players[0].score++;
     updateScoreboard();
     resetPositions();
-    startCountdown();
+    if (autoRestart) {
+      startCountdown();
+    } else {
+      gameActive = false;
+      statusInfo.innerHTML = `${players[0].name} Scores! Press 'R' to restart.`;
+    }
   }
 }
 
+// Collision detection
 function collisionDetect(ball, paddle) {
   return (
     ball.x - ball.radius < paddle.x + paddle.width &&
@@ -359,17 +359,7 @@ function collisionDetect(ball, paddle) {
   );
 }
 
-function resetBall() {
-  ball.x = canvas.width / 2;
-  ball.y = canvas.height / 2;
-  ball.speed = 8;
-  // Random initial direction
-  let angle = (Math.random() * Math.PI) / 2 - Math.PI / 4;
-  let direction = Math.random() > 0.5 ? 1 : -1;
-  ball.velocityX = direction * ball.speed * Math.cos(angle);
-  ball.velocityY = ball.speed * Math.sin(angle);
-}
-
+// Predict ball position for AI
 function predictBallY() {
   // Predict where the ball will be when it reaches the AI paddle
   let timeToReachPaddle = (players[1].x - ball.x) / ball.velocityX;
@@ -386,48 +376,58 @@ function predictBallY() {
   return predictedY;
 }
 
-// Update scoreboard
-function updateScoreboard() {
-  document.getElementById("player1Score").textContent =
-    players[0].name + ": " + players[0].score;
-  document.getElementById("player2Score").textContent =
-    players[1].name + ": " + players[1].score;
-}
-
-// Display controls
-function displayControls() {
-  let controlInfo = document.getElementById("controlInfo");
-  if (vsAI) {
-    controlInfo.innerHTML = `
-      <strong>Player 1 Controls:</strong> W/S to move.<br>
-      AI controls Player 2.<br>
-      Press 'R' to restart the game.
-    `;
-  } else {
-    controlInfo.innerHTML = `
-      <strong>Player 1 Controls:</strong> W/S to move.<br>
-      <strong>Player 2 Controls:</strong> Arrow keys to move.<br>
-      Press 'R' to restart the game.
-    `;
+// Key handling
+document.addEventListener("keydown", function (e) {
+  // Restart game
+  if (!gameActive && (e.key === "r" || e.key === "R")) {
+    resetPositions();
+    startCountdown();
+    return;
   }
-}
 
-// Start countdown before the game starts
-function startCountdown() {
-  if (countdownInterval) {
-    clearInterval(countdownInterval);
-  }
-  countdown = 3;
-  gameActive = false; // Ensure game is inactive during countdown
-  countdownInterval = setInterval(function() {
-    countdown--;
-    if (countdown <= 0) {
-      clearInterval(countdownInterval);
-      countdown = 0;
-      gameActive = true; // Re-enable the game after countdown
+  // Player controls
+  players.forEach((player, index) => {
+    let bindings = index === 0 ? keyBindings.player1 : keyBindings.player2;
+    if (e.key === bindings.up) {
+      player.up = true;
+    } else if (e.key === bindings.down) {
+      player.down = true;
     }
-  }, 1000);
+  });
+});
+
+document.addEventListener("keyup", function (e) {
+  players.forEach((player, index) => {
+    let bindings = index === 0 ? keyBindings.player1 : keyBindings.player2;
+    if (e.key === bindings.up) {
+      player.up = false;
+    } else if (e.key === bindings.down) {
+      player.down = false;
+    }
+  });
+});
+
+// Update controls display
+function updateControlsDisplay() {
+  displayControls();
 }
+
+// Initialize game
+function init() {
+  resizeCanvas();
+  getCSSColors();
+  keyBindings = getKeyBindings(keyboardLayout);
+  resetGame();
+  draw();
+}
+
+// Listen for theme changes
+document.addEventListener("themeChanged", function () {
+  getCSSColors();
+});
+
+// Window resize event
+window.addEventListener("resize", resizeCanvas);
 
 // Start the game
 init();

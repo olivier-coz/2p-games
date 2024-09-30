@@ -1,12 +1,12 @@
-<!-- games/pong/index.html -->
+<!-- games/math-game/index.html -->
 <!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>Pong Game</title>
+        <title>Reflex Game</title>
         <link rel="stylesheet" href="/css/styles.css" />
         <link rel="preload" href="/css/styles.css" as="style" />
-        <link rel="preload" href="pong.js" as="script" />
+        <link rel="preload" href="reflex.js" as="script" />
     </head>
     <body>
         <header>
@@ -22,7 +22,11 @@
                 </ul>
             </nav>
             <div>
-                <button id="auto-restart-toggle" class="btn">
+                <button
+                    id="auto-restart-toggle"
+                    class="btn"
+                    style="display: none"
+                >
                     Enable Auto Restart
                 </button>
                 <button id="keyboard-layout-toggle" class="btn">
@@ -38,14 +42,38 @@
         </header>
 
         <main>
-            <div class="game-container">
+            <div id="reflexGame" class="game-container">
                 <div class="scoreboard">
                     <span id="player1Score">Player 1: 0</span>
-                    &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;
                     <span id="player2Score">Player 2: 0</span>
                 </div>
-                <div class="game-full-width">
-                    <canvas id="gameCanvas"></canvas>
+                <div id="gameArea">
+                    <div id="rulesDisplay"></div>
+                    <div
+                        id="arrowElement"
+                        style="font-size: 100px; text-align: center"
+                    >
+                        &nbsp;
+                    </div>
+                    <div id="answers" class="answers">
+                        <div class="answer-row">
+                            <button id="answer0" class="answer-btn">
+                                <b>▲</b>
+                            </button>
+                        </div>
+                        <div class="answer-row">
+                            <button id="answer1" class="answer-btn">
+                                <b>◄</b>
+                            </button>
+                            <button id="answer2" class="answer-btn">
+                                <b>▼</b>
+                            </button>
+                            <button id="answer3" class="answer-btn">
+                                <b>►</b>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="message" class="message">&nbsp;</div>
                 </div>
                 <div id="statusInfo"></div>
                 <div id="controlInfo"></div>
@@ -56,6 +84,6 @@
             <p>&copy; 2024 OC</p>
         </footer>
         <script src="/js/common.js"></script>
-        <script src="pong.js"></script>
+        <script src="reflex.js"></script>
     </body>
 </html>

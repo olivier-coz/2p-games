@@ -1,45 +1,83 @@
 <!-- games/math-game/index.html -->
 <!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <title>Math Game</title>
-    <link rel="stylesheet" href="/css/styles.css" />
-</head>
-<body>
-    <div id="header"></div>
-
-    <main>
-        <div id="mathGame" class="game-container">
-            <div class="scoreboard">
-                <span id="player1Score">Player 1: 0</span>
-                <span id="player2Score">Player 2: 0</span>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Math Game</title>
+        <link rel="stylesheet" href="/css/styles.css" />
+        <link rel="preload" href="/css/styles.css" as="style" />
+        <link rel="preload" href="math.js" as="script" />
+    </head>
+    <body>
+        <header>
+            <nav>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/games/sumo/">Sumo</a></li>
+                    <li><a href="/games/pong/">Pong</a></li>
+                    <li><a href="/games/words/">Words</a></li>
+                    <li><a href="/games/math/">Math</a></li>
+                    <li><a href="/games/reflex/">Reflex</a></li>
+                    <!-- Add more links as needed -->
+                </ul>
+            </nav>
+            <div>
+                <button
+                    id="auto-restart-toggle"
+                    class="btn"
+                    style="display: none"
+                >
+                    Enable Auto Restart
+                </button>
+                <button id="keyboard-layout-toggle" class="btn">
+                    Switch to AZERTY Layout
+                </button>
+                <button id="player-mode-toggle" class="btn">
+                    Switch to 2-Player Mode
+                </button>
+                <button id="dark-mode-toggle" class="btn">
+                    Switch to Dark Mode
+                </button>
             </div>
-            <div id="gameArea">
-                <div id="equation" class="equation"></div>
-                <div id="answers" class="answers">
-                    <div class="answer-row">
-                        <button id="answer0" class="answer-btn">Answer 1</button>
-                    </div>
-                    <div class="answer-row">
-                        <button id="answer1" class="answer-btn">Answer 2</button>
-                        <button id="answer2" class="answer-btn">Answer 3</button>
-                        <button id="answer3" class="answer-btn">Answer 4</button>
-                    </div>
+        </header>
+
+        <main>
+            <div id="mathGame" class="game-container">
+                <div class="scoreboard">
+                    <span id="player1Score">Player 1: 0</span>
+                    <span id="player2Score">Player 2: 0</span>
                 </div>
-                <div id="message" class="message"></div>
-                <div id="winnerMessage"></div>
+                <div id="gameArea">
+                    <div id="equation" class="equation">E Q U A T I O N</div>
+                    <div id="answers" class="answers">
+                        <div class="answer-row">
+                            <button id="answer0" class="answer-btn">
+                                Answer 1
+                            </button>
+                        </div>
+                        <div class="answer-row">
+                            <button id="answer1" class="answer-btn">
+                                Answer 2
+                            </button>
+                            <button id="answer2" class="answer-btn">
+                                Answer 3
+                            </button>
+                            <button id="answer3" class="answer-btn">
+                                Answer 4
+                            </button>
+                        </div>
+                    </div>
+                    <div id="message" class="message">&nbsp;</div>
+                </div>
+                <div id="statusInfo"></div>
+                <div id="controlInfo"></div>
             </div>
-            <div id="statusInfo"></div>
-            <div id="controlInfo"></div>
-            <button id="modeToggle" class="btn">
-                Switch to 1-Player Mode
-            </button>
-        </div>
-    </main>
+        </main>
 
-    <div id="footer"></div>
-    <script src="/js/common.js"></script>
-    <script src="math.js"></script>
-</body>
+        <footer>
+            <p>&copy; 2024 OC</p>
+        </footer>
+        <script src="/js/common.js"></script>
+        <script src="math.js"></script>
+    </body>
 </html>

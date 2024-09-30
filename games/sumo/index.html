@@ -5,14 +5,43 @@
         <meta charset="UTF-8" />
         <title>Sumo</title>
         <link rel="stylesheet" href="/css/styles.css" />
+        <link rel="preload" href="/css/styles.css" as="style" />
+        <link rel="preload" href="sumo.js" as="script" />
     </head>
     <body>
-        <div id="header"></div>
+        <header>
+            <nav>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/games/sumo/">Sumo</a></li>
+                    <li><a href="/games/pong/">Pong</a></li>
+                    <li><a href="/games/words/">Words</a></li>
+                    <li><a href="/games/math/">Math</a></li>
+                    <li><a href="/games/reflex/">Reflex</a></li>
+                    <!-- Add more links as needed -->
+                </ul>
+            </nav>
+            <div>
+                <button id="auto-restart-toggle" class="btn">
+                    Enable Auto Restart
+                </button>
+                <button id="keyboard-layout-toggle" class="btn">
+                    Switch to AZERTY Layout
+                </button>
+                <button id="player-mode-toggle" class="btn">
+                    Switch to 2-Player Mode
+                </button>
+                <button id="dark-mode-toggle" class="btn">
+                    Switch to Dark Mode
+                </button>
+            </div>
+        </header>
 
         <main>
             <div class="game-container">
                 <div class="scoreboard">
-                    <span id="player1Score">Player 1: 0</span> |
+                    <span id="player1Score">Player 1: 0</span>
+                    &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;
                     <span id="player2Score">Player 2: 0</span>
                 </div>
                 <div class="game-full-width">
@@ -20,13 +49,12 @@
                 </div>
                 <div id="statusInfo"></div>
                 <div id="controlInfo"></div>
-                <button id="modeToggle" class="btn">
-                    Switch to 1-Player Mode
-                </button>
             </div>
         </main>
 
-        <div id="footer"></div>
+        <footer>
+            <p>&copy; 2024 OC</p>
+        </footer>
         <script src="/js/common.js"></script>
         <script src="sumo.js"></script>
     </body>

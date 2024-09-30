@@ -8,6 +8,8 @@ function getCSSColors() {
     text: rootStyles.getPropertyValue("--color-text").trim(),
     primary: rootStyles.getPropertyValue("--color-primary").trim(),
     secondary: rootStyles.getPropertyValue("--color-secondary").trim(),
+    tertiary: rootStyles.getPropertyValue("--color-tertiary").trim(),
+    quaternary: rootStyles.getPropertyValue("--color-quaternary").trim(),
     accent: rootStyles.getPropertyValue("--color-accent").trim(),
     muted: rootStyles.getPropertyValue("--color-muted").trim(),
   };
@@ -16,17 +18,22 @@ function getCSSColors() {
 // Listen for theme changes
 document.addEventListener("themeChanged", function () {
   getCSSColors();
+  displayCurrentRules();
 });
 
 // Game variables
 let gameActive = false;
 let vsMode = false;
 let scores = [0, 0]; // Scores for Player 1 and Player 2
-let gameTimer = null;
-let correctAnswerIndex;
-let answerSubmitted = false; // To track if an answer has been submitted for current question
+let totalPointsAwarded = 0; // Total points awarded (correct answers)
+let currentRuleMapping = {}; // Mapping of colors to rules
+let arrowDirection;
+let arrowColorKey;
+let arrowColor;
+let answerSubmitted = false; // To track if an answer has been submitted for current arrow
 let countdown = 0;
 let messageTimeout = null;
+let gameTimer = null;
 let keyboardLayout = "qwerty";
 let keyBindings = getKeyBindings(keyboardLayout);
 
@@ -40,19 +47,46 @@ let players = [
   },
 ];
 
-// Possible numbers and operations
-const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 25, 50, 75, 100];
-const operations = ["+", "-", "*", "/"];
+// Define possible directions and colors
+const directions = ["up", "down", "left", "right"];
+const colorKeys = ["primary", "secondary", "tertiary", "quaternary"];
+
+// Define rules
+const rulesArray = [
+  {
+    ruleText: "Same",
+    check: function (arrowDir, inputDir) {
+      return inputDir === arrowDir;
+    },
+  },
+  {
+    ruleText: "Opposite",
+    check: function (arrowDir, inputDir) {
+      const opposite = { up: "down", down: "up", left: "right", right: "left" };
+      return inputDir === opposite[arrowDir];
+    },
+  },
+  {
+    ruleText: " Any ",
+    check: function (arrowDir, inputDir) {
+      return true;
+    },
+  },
+  {
+    ruleText: "{direction}",
+    check: function (arrowDir, inputDir, ruleData) {
+      return inputDir === ruleData.fixedDirection;
+    },
+    fixedDirection: null, // Will be set when the rule mapping is generated
+  },
+];
 
 // Get HTML elements
 let statusInfo = document.getElementById("statusInfo");
 let controlInfo = document.getElementById("controlInfo");
 let messageElement = document.getElementById("message");
-let equationElement = document.getElementById("equation");
-let answerButtons = [];
-for (let i = 0; i < 4; i++) {
-  answerButtons.push(document.getElementById("answer" + i));
-}
+let arrowElement = document.getElementById("arrowElement"); // New element to display the arrow
+let rulesDisplay = document.getElementById("rulesDisplay"); // New element to display the rules
 let layoutToggleBtn = document.getElementById("layoutToggle");
 
 // Initialize the game
@@ -61,6 +95,9 @@ function init() {
   resetGame();
   updateScoreboard();
   displayControls();
+
+  // Generate initial rule mapping
+  generateRuleMapping();
 
   // Handle key presses
   document.addEventListener("keydown", function (e) {
@@ -73,58 +110,58 @@ function init() {
 
     if (!gameActive || answerSubmitted) return;
     let player = null;
-    let answerIndex = null;
+    let inputDirection = null;
 
     if (vsMode) {
       // Two-player mode
       // Player 1 controls
       if (e.key === keyBindings.player1.up) {
         player = 0;
-        answerIndex = 0;
+        inputDirection = "up";
       } else if (e.key === keyBindings.player1.left) {
         player = 0;
-        answerIndex = 1;
+        inputDirection = "left";
       } else if (e.key === keyBindings.player1.down) {
         player = 0;
-        answerIndex = 2;
+        inputDirection = "down";
       } else if (e.key === keyBindings.player1.right) {
         player = 0;
-        answerIndex = 3;
+        inputDirection = "right";
       }
       // Player 2 controls
       else if (e.key === keyBindings.player2.up) {
         player = 1;
-        answerIndex = 0;
+        inputDirection = "up";
       } else if (e.key === keyBindings.player2.left) {
         player = 1;
-        answerIndex = 1;
+        inputDirection = "left";
       } else if (e.key === keyBindings.player2.down) {
         player = 1;
-        answerIndex = 2;
+        inputDirection = "down";
       } else if (e.key === keyBindings.player2.right) {
         player = 1;
-        answerIndex = 3;
+        inputDirection = "right";
       }
     } else {
       // One-player mode
       // Player 1 controls
       if (e.key === keyBindings.player1.up) {
         player = 0;
-        answerIndex = 0;
+        inputDirection = "up";
       } else if (e.key === keyBindings.player1.left) {
         player = 0;
-        answerIndex = 1;
+        inputDirection = "left";
       } else if (e.key === keyBindings.player1.down) {
         player = 0;
-        answerIndex = 2;
+        inputDirection = "down";
       } else if (e.key === keyBindings.player1.right) {
         player = 0;
-        answerIndex = 3;
+        inputDirection = "right";
       }
     }
 
-    if (player !== null && answerIndex !== null) {
-      checkAnswer(player, answerIndex);
+    if (player !== null && inputDirection !== null) {
+      checkAnswer(player, inputDirection);
     }
   });
 
@@ -133,13 +170,15 @@ function init() {
 
 function resetGame() {
   // Reset variables
+  updateScoreboard();
   gameActive = false;
   messageElement.innerHTML = "&nbsp;";
   clearInterval(gameTimer);
   scores = [0, 0];
-  correctAnswerIndex = null;
+  totalPointsAwarded = 0;
+  currentRuleMapping = {};
+  generateRuleMapping();
   answerSubmitted = false;
-  updateScoreboard();
   displayControls();
   statusInfo.innerHTML = "Press R to Start the Game";
 }
@@ -162,7 +201,7 @@ function startCountdown() {
 
 function startGame() {
   gameActive = true;
-  generateEquation();
+  generateArrow();
   if (!vsMode) {
     // One-player mode
     startGameTimer();
@@ -206,22 +245,23 @@ function updateScoreboard() {
     updateTimers(0);
   }
 }
+
 // Display controls
 function displayControls() {
   if (vsMode) {
     controlInfo.innerHTML = `
       <strong>Instructions:</strong><br>
-      First player to answer gets +1 for correct, -1 for incorrect.<br>
-      <strong>Player 1 Controls:</strong> ${keyBindings.player1.up.toUpperCase()}/${keyBindings.player1.left.toUpperCase()}/${keyBindings.player1.down.toUpperCase()}/${keyBindings.player1.right.toUpperCase()} to select answers.<br>
-      <strong>Player 2 Controls:</strong> Arrow keys to select answers.<br>
+      Follow the current rules based on the arrow's color.<br>
+      <strong>Player 1 Controls:</strong> ${keyBindings.player1.up.toUpperCase()}/${keyBindings.player1.left.toUpperCase()}/${keyBindings.player1.down.toUpperCase()}/${keyBindings.player1.right.toUpperCase()} to respond.<br>
+      <strong>Player 2 Controls:</strong> Arrow keys to respond.<br>
     `;
   } else {
     controlInfo.innerHTML = `
       <strong>Instructions:</strong><br>
-      Solve as many equations as you can before time runs out.<br>
-      <strong>Controls:</strong> ${keyBindings.player1.up.toUpperCase()}/${keyBindings.player1.left.toUpperCase()}/${keyBindings.player1.down.toUpperCase()}/${keyBindings.player1.right.toUpperCase()} to select answers.<br>
+      Follow the current rules based on the arrow's color.<br>
+      <strong>Controls:</strong> ${keyBindings.player1.up.toUpperCase()}/${keyBindings.player1.left.toUpperCase()}/${keyBindings.player1.down.toUpperCase()}/${keyBindings.player1.right.toUpperCase()} to respond.<br>
       <br>
-      `;
+    `;
   }
 }
 
@@ -230,130 +270,124 @@ function updateControlsDisplay() {
   displayControls();
 }
 
-function generateEquation() {
+// Function to generate rule mapping
+function generateRuleMapping() {
+  // Shuffle colors and rules
+  const shuffledColors = shuffleArray(colorKeys.slice());
+  const shuffledRules = shuffleArray(rulesArray.slice());
+
+  // Assign a random direction for the "Always answer {direction}" rule
+  for (let rule of shuffledRules) {
+    if (rule.ruleText === "{direction}") {
+      rule.fixedDirection =
+        directions[Math.floor(Math.random() * directions.length)];
+      rule.ruleText =
+        rule.fixedDirection.charAt(0).toUpperCase() +
+        rule.fixedDirection.slice(1);
+    }
+  }
+
+  // Create mapping
+  currentRuleMapping = {};
+  for (let i = 0; i < 4; i++) {
+    currentRuleMapping[shuffledColors[i]] = shuffledRules[i];
+  }
+
+  displayCurrentRules();
+}
+
+function generateArrow() {
   answerSubmitted = false;
-  // Randomly select 4 numbers
-  let nums = [];
-  for (let i = 0; i < 4; i++) {
-    nums.push(numbers[Math.floor(Math.random() * numbers.length)]);
-  }
 
-  // Randomly select operations
-  let ops = [];
-  for (let i = 0; i < 3; i++) {
-    ops.push(operations[Math.floor(Math.random() * operations.length)]);
-  }
+  // Generate random direction and color
+  arrowDirection = directions[Math.floor(Math.random() * directions.length)];
+  arrowColorKey = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+  arrowColor = colors[arrowColorKey];
 
-  // Decide whether to include parentheses
-  let includeParentheses = Math.random() > 0.5;
-
-  let equationStr;
-  if (includeParentheses) {
-    let parenthesesPosition = Math.floor(Math.random() * 2);
-    if (parenthesesPosition === 0) {
-      equationStr = `(${nums[0]} ${ops[0]} ${nums[1]}) ${ops[1]} ${nums[2]} ${ops[2]} ${nums[3]}`;
-    } else {
-      equationStr = `${nums[0]} ${ops[0]} (${nums[1]} ${ops[1]} ${nums[2]}) ${ops[2]} ${nums[3]}`;
-    }
-  } else {
-    equationStr = `${nums[0]} ${ops[0]} ${nums[1]} ${ops[1]} ${nums[2]} ${ops[2]} ${nums[3]}`;
-  }
-
-  // Calculate the correct answer
-  let correctAnswer = null;
-  try {
-    correctAnswer = eval(equationStr);
-    correctAnswer = parseFloat(correctAnswer.toFixed(2)); // Fix to 2 decimal places
-    if (isNaN(correctAnswer) || !isFinite(correctAnswer)) throw new Error();
-  } catch (e) {
-    // If there's an error in evaluation, regenerate the equation
-    return generateEquation();
-  }
-
-  // Generate possible answers
-  let answers = [];
-  answers.push(correctAnswer);
-
-  // Incorrect answers
-  let incorrectAnswer1 = parseFloat(
-    (correctAnswer + Math.floor(Math.random() * 20) - 10).toFixed(2),
-  ); // Fix to 2 decimal places
-  let incorrectAnswer2 = parseFloat(
-    (correctAnswer + Math.floor(Math.random() * 40) - 20).toFixed(2),
-  ); // Fix to 2 decimal places
-  let incorrectAnswer3 = parseFloat(
-    generateIncorrectAnswer(nums, ops, correctAnswer).toFixed(2),
-  ); // Fix to 2 decimal places
-
-  answers.push(incorrectAnswer1);
-  answers.push(incorrectAnswer2);
-  answers.push(incorrectAnswer3);
-
-  // Remove duplicate answers
-  answers = [...new Set(answers)];
-
-  // If we have less than 4 unique answers, regenerate the equation
-  if (answers.length < 4) {
-    return generateEquation();
-  }
-
-  // Shuffle answers
-  answers = shuffleArray(answers);
-
-  // Set the correct answer index
-  correctAnswerIndex = answers.indexOf(correctAnswer);
-
-  // Display equation and answers
-  equationElement.textContent = equationStr;
-  for (let i = 0; i < 4; i++) {
-    answerButtons[i].textContent = answers[i];
-  }
+  displayArrow(arrowDirection, arrowColor);
 }
 
-function generateIncorrectAnswer(nums, ops, correctAnswer) {
-  let equationStr = `${nums[0]} ${ops[0]} ${nums[1]} ${ops[1]} ${nums[2]} ${ops[2]} ${nums[3]}`;
-  let incorrectAnswer = null;
-  try {
-    // Evaluate left to right without considering operator precedence
-    incorrectAnswer = evaluateLeftToRight(equationStr);
-    incorrectAnswer = Math.round(incorrectAnswer * 100) / 100;
-  } catch (e) {
-    incorrectAnswer = correctAnswer + Math.floor(Math.random() * 30) - 15;
+function displayArrow(direction, color) {
+  let arrowChar = "";
+  switch (direction) {
+    case "up":
+      arrowChar = "↑";
+      break;
+    case "down":
+      arrowChar = "↓";
+      break;
+    case "left":
+      arrowChar = "←";
+      break;
+    case "right":
+      arrowChar = "→";
+      break;
   }
-  return incorrectAnswer;
+  arrowElement.innerHTML = arrowChar;
+  arrowElement.style.color = color;
 }
 
-// Evaluate expression left to right ignoring operator precedence
-function evaluateLeftToRight(expr) {
-  let tokens = expr.split(" ");
-  let result = parseFloat(tokens[0]);
-  for (let i = 1; i < tokens.length; i += 2) {
-    let op = tokens[i];
-    let num = parseFloat(tokens[i + 1]);
-    switch (op) {
-      case "+":
-        result += num;
-        break;
-      case "-":
-        result -= num;
-        break;
-      case "*":
-        result *= num;
-        break;
-      case "/":
-        result /= num;
-        break;
-    }
+function displayCurrentRules() {
+  let rulesText = "<br><strong>Current Rules:</strong><br>";
+  for (let colorKey in currentRuleMapping) {
+    let colorName = colorKey; // 'primary', 'secondary', etc.
+    let colorValue = colors[colorKey]; // actual color code
+    let ruleObj = currentRuleMapping[colorKey];
+    rulesText += `<span style="color:${colorValue}">⬤</span> ${ruleObj.ruleText} <span style="color:${colorValue}">⬤</span><br>`;
   }
-  return result;
+  rulesDisplay.innerHTML = rulesText;
 }
 
-function checkAnswer(player, answerIndex) {
+// function checkAnswer(player, inputDirection) {
+//   if (!gameActive || answerSubmitted) return;
+//   answerSubmitted = true;
+
+//   // Get the rule for the arrow's color
+//   let ruleObj = currentRuleMapping[arrowColorKey];
+
+//   // Check if the answer is correct
+//   let isCorrect = ruleObj.check(arrowDirection, inputDirection, ruleObj);
+
+//   if (isCorrect) {
+//     scores[player]++;
+//     totalPointsAwarded++;
+//     messageElement.textContent = `${players[player].name} is correct!`;
+//   } else {
+//     scores[player]--;
+//     messageElement.textContent = `${players[player].name} is incorrect!`;
+//   }
+//   updateScoreboard();
+
+//   // Check if we need to change the rules
+//   if (totalPointsAwarded > 0 && totalPointsAwarded % 5 === 0) {
+//     generateRuleMapping();
+//   }
+
+//   if (gameActive) {
+//     clearTimeout(messageTimeout);
+//     messageTimeout = setTimeout(function () {
+//       messageElement.innerHTML = "&nbsp;";
+//     }, 2000);
+//     setTimeout(function () {
+//       generateArrow();
+//     }, 1000);
+//   }
+// }
+//
+//
+function checkAnswer(player, inputDirection) {
   if (!gameActive || answerSubmitted) return;
   answerSubmitted = true;
 
-  if (answerIndex === correctAnswerIndex) {
+  // Get the rule for the arrow's color
+  let ruleObj = currentRuleMapping[arrowColorKey];
+
+  // Check if the answer is correct
+  let isCorrect = ruleObj.check(arrowDirection, inputDirection, ruleObj);
+
+  if (isCorrect) {
     scores[player]++;
+    totalPointsAwarded++;
     messageElement.textContent = `${players[player].name} is correct!`;
   } else {
     scores[player]--;
@@ -361,14 +395,19 @@ function checkAnswer(player, answerIndex) {
   }
   updateScoreboard();
 
+  // Check if we need to change the rules with 1-in-5 chance
+  if (Math.random() < 0.2) {
+    generateRuleMapping(); // Generate and display the new rules
+  }
+
   if (gameActive) {
     clearTimeout(messageTimeout);
     messageTimeout = setTimeout(function () {
       messageElement.innerHTML = "&nbsp;";
     }, 2000);
-    setTimeout(function () {
-      generateEquation();
-    }, 1000);
+
+    // Generate a new arrow immediately after the rule is updated
+    generateArrow();
   }
 }
 

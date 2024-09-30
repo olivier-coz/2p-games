@@ -1,9 +1,93 @@
-// Get canvas and context
+// sumo.js
+
+// Constants
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Variables for CSS colors
+// HTML Elements
+const statusInfo = document.getElementById("statusInfo");
+const controlInfo = document.getElementById("controlInfo");
+
+// Variables
 let colors = {};
+let arena = { x: 0, y: 0, radius: 0 };
+let scores = [0, 0];
+let gameActive = false;
+let autoRestart = false;
+let keyboardLayout = "qwerty";
+let vsMode = false;
+let keyBindings = getKeyBindings(keyboardLayout);
+let lastTime = performance.now();
+let countdown = 0;
+
+// Players
+let players = [
+  {
+    x: 0,
+    y: 0,
+    radius: 30,
+    color: "",
+    vx: 0,
+    vy: 0,
+    speed: 5,
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    name: "Player 1",
+    canDash: true,
+    isDashing: false,
+    dashCooldown: 0,
+    dashChargeTime: 0,
+    dashDuration: 0,
+    dashSpeedMultiplier: 3,
+    dashChargeDuration: 0.1,
+    dashActiveDuration: 0.2,
+    cooldownDuration: 0.5,
+    facingAngle: 0,
+  },
+  {
+    x: 0,
+    y: 0,
+    radius: 30,
+    color: "",
+    vx: 0,
+    vy: 0,
+    speed: 5,
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    name: "Player 2",
+    canDash: true,
+    isDashing: false,
+    dashCooldown: 0,
+    dashChargeTime: 0,
+    dashDuration: 0,
+    dashSpeedMultiplier: 3,
+    dashChargeDuration: 0.1,
+    dashActiveDuration: 0.2,
+    cooldownDuration: 0.5,
+    facingAngle: 0,
+  },
+];
+
+// Fetch CSS colors
+function getCSSColors() {
+  const rootStyles = getComputedStyle(document.body);
+  colors = {
+    background: rootStyles.getPropertyValue("--color-background").trim(),
+    text: rootStyles.getPropertyValue("--color-text").trim(),
+    primary: rootStyles.getPropertyValue("--color-primary").trim(),
+    secondary: rootStyles.getPropertyValue("--color-secondary").trim(),
+    accent: rootStyles.getPropertyValue("--color-accent").trim(),
+    muted: rootStyles.getPropertyValue("--color-muted").trim(),
+  };
+
+  // Update player colors
+  players[0].color = colors.secondary; // Player 1 color
+  players[1].color = colors.primary; // Player 2 color
+}
 
 // Responsive canvas setup
 function resizeCanvas() {
@@ -18,266 +102,126 @@ function resizeCanvas() {
   // Reset player positions
   resetPlayers();
 }
-window.addEventListener("resize", resizeCanvas);
-
-// Arena
-let arena = {
-  x: 0, // Will be set in resizeCanvas()
-  y: 0, // Will be set in resizeCanvas()
-  radius: 0, // Will be set in resizeCanvas()
-};
-
-// Scores
-let scores = [0, 0]; // Index 0 for Player 1, 1 for Player 2
-
-// Game state
-let gameActive = true;
-let gameOver = false;
-
-// Get HTML elements
-let statusInfo = document.getElementById("statusInfo");
-let controlInfo = document.getElementById("controlInfo");
-
-// Players
-let players = [
-  {
-    x: 0,
-    y: 0,
-    radius: 30,
-    color: "", // Will be set later
-    vx: 0,
-    vy: 0,
-    speed: 5,
-    up: false,
-    down: false,
-    left: false,
-    right: false,
-    name: "Player 1",
-    // Dash properties
-    canDash: true,
-    isDashing: false,
-    dashCooldown: 0,
-    dashChargeTime: 0,
-    dashDuration: 0,
-    dashSpeedMultiplier: 3,
-    dashChargeDuration: 0.1, // seconds
-    dashActiveDuration: 0.2, // seconds
-    cooldownDuration: 0.5, // seconds
-    facingAngle: 0,
-  },
-  {
-    x: 0,
-    y: 0,
-    radius: 30,
-    color: "", // Will be set later
-    vx: 0,
-    vy: 0,
-    speed: 5,
-    up: false,
-    down: false,
-    left: false,
-    right: false,
-    name: "Player 2",
-    // Dash properties
-    canDash: true,
-    isDashing: false,
-    dashCooldown: 0,
-    dashChargeTime: 0,
-    dashDuration: 0,
-    dashSpeedMultiplier: 3,
-    dashChargeDuration: 0.1, // seconds
-    dashActiveDuration: 0.2, // seconds
-    cooldownDuration: 0.5, // seconds
-    facingAngle: 0,
-  },
-];
-
-// Key handling
-document.addEventListener("keydown", function (e) {
-  switch (e.key) {
-    // Player 1 controls (WASD)
-    case "w":
-    case "W":
-      players[0].up = true;
-      break;
-    case "s":
-    case "S":
-      players[0].down = true;
-      break;
-    case "a":
-    case "A":
-      players[0].left = true;
-      break;
-    case "d":
-    case "D":
-      players[0].right = true;
-      break;
-    // Player 1 dash key (Left Shift)
-    case "Shift":
-      if (
-        players[0].canDash &&
-        !players[0].isDashing &&
-        players[0].dashCooldown <= 0
-      ) {
-        startDash(players[0]);
-      }
-      break;
-    // Player 2 controls (Arrow keys)
-    case "ArrowUp":
-      players[1].up = true;
-      break;
-    case "ArrowDown":
-      players[1].down = true;
-      break;
-    case "ArrowLeft":
-      players[1].left = true;
-      break;
-    case "ArrowRight":
-      players[1].right = true;
-      break;
-    // Player 2 dash key (Right Control)
-    case "Control":
-      if (
-        players[1].canDash &&
-        !players[1].isDashing &&
-        players[1].dashCooldown <= 0
-      ) {
-        startDash(players[1]);
-      }
-      break;
-  }
-});
-
-document.addEventListener("keyup", function (e) {
-  switch (e.key) {
-    // Player 1 controls (WASD)
-    case "w":
-    case "W":
-      players[0].up = false;
-      break;
-    case "s":
-    case "S":
-      players[0].down = false;
-      break;
-    case "a":
-    case "A":
-      players[0].left = false;
-      break;
-    case "d":
-    case "D":
-      players[0].right = false;
-      break;
-    // Player 2 controls (Arrow keys)
-    case "ArrowUp":
-      players[1].up = false;
-      break;
-    case "ArrowDown":
-      players[1].down = false;
-      break;
-    case "ArrowLeft":
-      players[1].left = false;
-      break;
-    case "ArrowRight":
-      players[1].right = false;
-      break;
-  }
-});
-
-// Get CSS variables for colors
-function getCSSColors() {
-  const rootStyles = getComputedStyle(document.body);
-  colors = {
-    background: rootStyles.getPropertyValue("--color-background").trim(),
-    text: rootStyles.getPropertyValue("--color-text").trim(),
-    primary: rootStyles.getPropertyValue("--color-primary").trim(),
-    secondary: rootStyles.getPropertyValue("--color-secondary").trim(),
-    accent: rootStyles.getPropertyValue("--color-accent").trim(),
-    muted: rootStyles.getPropertyValue("--color-muted").trim(),
-  };
-
-  // Update player colors
-  players[0].color = colors.secondary; // Using secondary color for Player 1
-  players[1].color = colors.primary; // Using primary color for Player 2
-}
-
-// Listen for dark mode changes
-document.addEventListener("themeChanged", function () {
-  getCSSColors();
-});
 
 // Reset player positions
 function resetPlayers() {
-  // Player 1 starts on the left
-  players[0].x = arena.x - arena.radius / 2;
-  players[0].y = arena.y;
-  players[0].vx = 0;
-  players[0].vy = 0;
-  players[0].canDash = true;
-  players[0].isDashing = false;
-  players[0].dashCooldown = 0;
+  players.forEach((player, index) => {
+    player.x = arena.x + (index === 0 ? -1 : 1) * (arena.radius / 2);
+    player.y = arena.y;
+    player.vx = 0;
+    player.vy = 0;
+    player.canDash = true;
+    player.isDashing = false;
+    player.dashCooldown = 0;
+    player.up = false;
+    player.down = false;
+    player.left = false;
+    player.right = false;
+    player.facingAngle = 0;
+    player.dashChargeTime = 0;
+    player.dashDuration = 0;
+  });
 
-  // Player 2 starts on the right
-  players[1].x = arena.x + arena.radius / 2;
-  players[1].y = arena.y;
-  players[1].vx = 0;
-  players[1].vy = 0;
-  players[1].canDash = true;
-  players[1].isDashing = false;
-  players[1].dashCooldown = 0;
-
-  // Do not set gameActive to true here
   statusInfo.innerHTML = "";
   controlInfo.innerHTML = "";
   displayControls();
 }
 
+// Display controls
+function displayControls() {
+  if (!vsMode) {
+    controlInfo.innerHTML = `
+      <strong>Player 1 Controls:</strong> ${keyBindings.player1.up.toUpperCase()}/${keyBindings.player1.left.toUpperCase()}/${keyBindings.player1.down.toUpperCase()}/${keyBindings.player1.right.toUpperCase()} to move, ${keyBindings.player1.action} to dash.<br>
+      AI controls Player 2.<br>
+    `;
+  } else {
+    controlInfo.innerHTML = `
+      <strong>Player 1 Controls:</strong> ${keyBindings.player1.up.toUpperCase()}/${keyBindings.player1.left.toUpperCase()}/${keyBindings.player1.down.toUpperCase()}/${keyBindings.player1.right.toUpperCase()} to move, ${keyBindings.player1.action} to dash.<br>
+      <strong>Player 2 Controls:</strong> Arrow keys to move, ${keyBindings.player2.action} to dash.<br>
+    `;
+  }
+}
+
+// Update controls display when keyboard layout changes
+function updateControlsDisplay() {
+  displayControls();
+}
+
+// Update scoreboard
+function updateScoreboard() {
+  document.getElementById("player1Score").textContent =
+    `${players[0].name}: ${scores[0]}`;
+  document.getElementById("player2Score").textContent =
+    `${players[1].name}: ${scores[1]}`;
+}
+
+// Reset scoreboard
+function resetScoreboard() {
+  scores = [0, 0];
+  updateScoreboard();
+}
+
+// Game initialization
+function init() {
+  resizeCanvas();
+  getCSSColors();
+  keyBindings = getKeyBindings(keyboardLayout);
+  resetPlayers();
+  updateScoreboard();
+  lastTime = performance.now();
+  gameActive = false;
+  updateGame(lastTime);
+
+  if (autoRestart) {
+    startCountdown();
+  } else {
+    statusInfo.innerHTML = "Press R to Start the Game";
+  }
+}
+
 // Game loop
-let lastTime = performance.now();
 function updateGame(timestamp) {
-  let deltaTime = (timestamp - lastTime) / 1000; // Convert to seconds
+  let deltaTime = (timestamp - lastTime) / 1000;
   lastTime = timestamp;
 
   if (gameActive) {
     movePlayers(deltaTime);
     checkCollisions();
   }
-  draw(); // Always draw, even if game is not active (to display countdown)
+  draw();
   requestAnimationFrame(updateGame);
 }
 
-// Move players
+// Move players (including AI for Player 2 in 1-player mode)
 function movePlayers(deltaTime) {
-  players.forEach(function (player) {
-    // Handle dash cooldown
-    if (player.dashCooldown > 0) {
-      player.dashCooldown -= deltaTime;
-      if (player.dashCooldown <= 0) {
-        player.dashCooldown = 0;
-        player.canDash = true;
-      }
-    }
+  players.forEach(function (player, index) {
+    if (index === 1 && !vsMode) {
+      // AI logic for Player 2 in 1-player mode
+      let targetPlayer = players[0];
 
-    // Handle dash charge time
-    if (player.isDashing) {
-      player.dashChargeTime += deltaTime;
-      if (player.dashChargeTime >= player.dashChargeDuration) {
-        // Start dash movement
-        player.dashDuration += deltaTime;
-        let dashSpeed = player.speed * player.dashSpeedMultiplier;
-        player.vx = dashSpeed * Math.cos(player.facingAngle);
-        player.vy = dashSpeed * Math.sin(player.facingAngle);
-        if (player.dashDuration >= player.dashActiveDuration) {
-          // End dash
-          player.isDashing = false;
-          player.dashChargeTime = 0;
-          player.dashDuration = 0;
-          player.dashCooldown = player.cooldownDuration;
-          player.vx = 0;
-          player.vy = 0;
-        }
+      // Calculate direction to Player 1
+      let dx = targetPlayer.x - player.x;
+      let dy = targetPlayer.y - player.y;
+      let distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (!player.isDashing) {
+        // Normalize direction vector
+        let moveX = (dx / distance) * player.speed;
+        let moveY = (dy / distance) * player.speed;
+
+        player.vx = moveX * deltaTime * 60;
+        player.vy = moveY * deltaTime * 60;
+
+        // Update facing angle
+        player.facingAngle = Math.atan2(moveY, moveX);
       }
-    } else if (player.dashCooldown <= 0) {
-      // Apply input to velocity if not in cooldown
+
+      // AI Dash Logic
+      if (distance < 100 && player.canDash && !player.isDashing) {
+        startDash(player);
+      }
+    } else {
+      // Human player movement
       if (!player.isDashing) {
         let moveX = 0;
         let moveY = 0;
@@ -297,10 +241,34 @@ function movePlayers(deltaTime) {
         player.vx *= 0.9;
         player.vy *= 0.9;
       }
-    } else {
-      // During cooldown, player cannot move
-      player.vx = 0;
-      player.vy = 0;
+    }
+
+    // Handle dash cooldown
+    if (player.dashCooldown > 0) {
+      player.dashCooldown -= deltaTime;
+      if (player.dashCooldown <= 0) {
+        player.dashCooldown = 0;
+        player.canDash = true;
+      }
+    }
+
+    // Handle dash charge and movement
+    if (player.isDashing) {
+      player.dashChargeTime += deltaTime;
+      if (player.dashChargeTime >= player.dashChargeDuration) {
+        player.dashDuration += deltaTime;
+        let dashSpeed = player.speed * player.dashSpeedMultiplier;
+        player.vx = dashSpeed * Math.cos(player.facingAngle);
+        player.vy = dashSpeed * Math.sin(player.facingAngle);
+        if (player.dashDuration >= player.dashActiveDuration) {
+          player.isDashing = false;
+          player.dashChargeTime = 0;
+          player.dashDuration = 0;
+          player.dashCooldown = player.cooldownDuration;
+          player.vx = 0;
+          player.vy = 0;
+        }
+      }
     }
 
     // Update position
@@ -315,7 +283,6 @@ function startDash(player) {
   player.canDash = false;
   player.dashChargeTime = 0;
   player.dashDuration = 0;
-  // Player cannot move during charge time
   player.vx = 0;
   player.vy = 0;
 }
@@ -329,7 +296,6 @@ function checkCollisions() {
   let minDist = players[0].radius + players[1].radius;
 
   if (distance < minDist) {
-    // Calculate angle and force
     let angle = Math.atan2(dy, dx);
     let overlap = 0.5 * (minDist - distance);
 
@@ -339,7 +305,7 @@ function checkCollisions() {
     players[1].x += overlap * Math.cos(angle);
     players[1].y += overlap * Math.sin(angle);
 
-    // Update velocities for bounce effect
+    // Bounce effect
     let vxTotal = players[0].vx - players[1].vx;
     let vyTotal = players[0].vy - players[1].vy;
 
@@ -363,21 +329,17 @@ function checkCollisions() {
     let distance = Math.sqrt(dx * dx + dy * dy);
 
     if (distance + player.radius > arena.radius) {
-      // Player is out of bounds
       gameActive = false;
-
-      // Update scores
-      let losingPlayerIndex = index;
       let winningPlayerIndex = index === 0 ? 1 : 0;
       scores[winningPlayerIndex]++;
-
-      // Update scoreboard
       updateScoreboard();
 
-      // Next round
-      statusInfo.innerHTML =
-        players[winningPlayerIndex].name + " Wins the Round!";
-      controlInfo.innerHTML = "Press R to Start Next Round";
+      statusInfo.innerHTML = `${players[winningPlayerIndex].name} Wins the Round! Press R to restart.`;
+
+      if (autoRestart) {
+        resetPlayers();
+        startCountdown();
+      }
     }
   });
 }
@@ -387,10 +349,10 @@ function draw() {
   // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Draw arena (circle)
+  // Draw arena
   ctx.beginPath();
   ctx.arc(arena.x, arena.y, arena.radius, 0, 2 * Math.PI);
-  ctx.strokeStyle = colors.text; // Use the text color for the arena border
+  ctx.strokeStyle = colors.text;
   ctx.lineWidth = 5;
   ctx.stroke();
 
@@ -401,21 +363,21 @@ function draw() {
     ctx.fillStyle = player.color;
     ctx.fill();
 
-    // Draw dash charge indication
+    // Dash charge indication
     if (player.isDashing && player.dashChargeTime < player.dashChargeDuration) {
       ctx.save();
       ctx.globalAlpha = 0.5;
-      ctx.fillStyle = colors.accent; // Use accent color for dash charge
+      ctx.fillStyle = colors.accent;
       ctx.beginPath();
       ctx.arc(player.x, player.y, player.radius + 10, 0, 2 * Math.PI);
       ctx.fill();
       ctx.restore();
     }
 
-    // Draw cooldown overlay
+    // Cooldown overlay
     if (player.dashCooldown > 0 && !player.isDashing) {
       ctx.save();
-      ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; // Semi-transparent overlay
+      ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
       ctx.beginPath();
       ctx.arc(player.x, player.y, player.radius, 0, 2 * Math.PI);
       ctx.fill();
@@ -423,7 +385,7 @@ function draw() {
     }
   });
 
-  // If the game is not active and there's a countdown, display it
+  // Display countdown
   if (!gameActive && countdown > 0) {
     ctx.font = "bold 72px Arial";
     ctx.fillStyle = colors.text;
@@ -432,178 +394,88 @@ function draw() {
   }
 }
 
-// Display controls
-function displayControls() {
-  controlInfo.innerHTML = `
-        <strong>Player 1 Controls:</strong> W/A/S/D to move, Left Shift to dash.<br>
-        <strong>Player 2 Controls:</strong> Arrow keys to move, Right Control to dash.<br>
-    `;
-}
-
-// Update scoreboard
-function updateScoreboard() {
-  document.getElementById("player1Score").textContent =
-    players[0].name + ": " + scores[0];
-  document.getElementById("player2Score").textContent =
-    players[1].name + ": " + scores[1];
-}
-
-// Variables for countdown
-let countdown = 0;
-
-// Restart game or start next round
-document.addEventListener("keydown", function (e) {
-  if (!gameActive && (e.key === "r" || e.key === "R")) {
-    
-    resetPlayers(); // Reset players first
-    startCountdown(); // Start the 3-second countdown
-  }
-});
-
-// Start countdown before the game starts
+// Start countdown
 function startCountdown() {
   countdown = 3;
-  statusInfo.innerHTML = 'Game starts in ' + countdown + '...';
-  gameActive = false; // Ensure game is inactive during countdown
-  let countdownInterval = setInterval(function() {
+  statusInfo.innerHTML = `Game starts in ${countdown}...`;
+  gameActive = false;
+  let countdownInterval = setInterval(function () {
     countdown--;
     if (countdown > 0) {
-      statusInfo.innerHTML = 'Game starts in ' + countdown + '...';
+      statusInfo.innerHTML = `Game starts in ${countdown}...`;
     } else {
       clearInterval(countdownInterval);
-      statusInfo.innerHTML = '';
-      gameActive = true; // Re-enable the game after countdown
+      statusInfo.innerHTML = "...";
+      gameActive = true;
     }
   }, 1000);
 }
 
 function resetGame() {
-  resetPlayers(); // Reset player positions and properties
+  resetPlayers();
+  gameActive = false;
+  countdown = 0;
+  statusInfo.innerHTML = "...";
+  displayControls();
+  resetScoreboard();
 
-  if (!vsMode) {
-    // Show controls for 1-player mode
-    controlInfo.innerHTML = `
-      <strong>Player 1 Controls:</strong> W/A/S/D to move, Left Shift to dash.<br>
-      AI controls Player 2.<br>
-    `;
+  if (autoRestart) {
+    startCountdown();
   } else {
-    // Show controls for 2-player mode
-    controlInfo.innerHTML = `
-      <strong>Player 1 Controls:</strong> W/A/S/D to move, Left Shift to dash.<br>
-      <strong>Player 2 Controls:</strong> Arrow keys to move, Right Control to dash.<br>
-    `;
+    statusInfo.innerHTML = "Press R to Start the Game";
   }
 }
 
-let modeToggleBtn = document.getElementById("modeToggle");
-let vsMode = true; // Start with 2-player mode by default
+// Key handling
+document.addEventListener("keydown", function (e) {
+  // Restart game
+  if (!gameActive && (e.key === "r" || e.key === "R")) {
+    resetPlayers();
+    startCountdown();
+    return;
+  }
 
-// Mode toggle button
-modeToggleBtn.addEventListener("click", () => {
-  vsMode = !vsMode;
-  modeToggleBtn.textContent = vsMode
-    ? "Switch to 1-Player Mode"
-    : "Switch to 2-Player Mode";
-  resetGame(); // Reset game after mode change
-});
-
-// Move players (including AI for Player 2 in 1-player mode)
-function movePlayers(deltaTime) {
-  players.forEach(function (player, index) {
-    if (index === 1 && !vsMode) {
-      // AI logic for Player 2 in 1-player mode
-      let targetPlayer = players[0]; // AI is targeting Player 1
-
-      // Calculate direction to Player 1
-      let dx = targetPlayer.x - player.x;
-      let dy = targetPlayer.y - player.y;
-      let distance = Math.sqrt(dx * dx + dy * dy);
-
-      // Move towards Player 1
-      if (!player.isDashing) {
-        // Normalize direction vector
-        let moveX = (dx / distance) * player.speed;
-        let moveY = (dy / distance) * player.speed;
-
-        player.vx = moveX * deltaTime * 60;
-        player.vy = moveY * deltaTime * 60;
-
-        // Update facing angle
-        player.facingAngle = Math.atan2(moveY, moveX);
-      }
-
-      // AI Dash Logic - dash if close enough to Player 1
-      if (distance < 100 && player.canDash && !player.isDashing) {
+  // Player controls
+  players.forEach((player, index) => {
+    let bindings = index === 0 ? keyBindings.player1 : keyBindings.player2;
+    if (e.key === bindings.up) {
+      player.up = true;
+    } else if (e.key === bindings.down) {
+      player.down = true;
+    } else if (e.key === bindings.left) {
+      player.left = true;
+    } else if (e.key === bindings.right) {
+      player.right = true;
+    } else if (e.key === bindings.action) {
+      if (player.canDash && !player.isDashing && player.dashCooldown <= 0) {
         startDash(player);
       }
-    } else {
-      // Human player movement (Player 1 and Player 2 in 2-player mode)
-      if (!player.isDashing) {
-        let moveX = 0;
-        let moveY = 0;
-        if (player.up) moveY -= player.speed;
-        if (player.down) moveY += player.speed;
-        if (player.left) moveX -= player.speed;
-        if (player.right) moveX += player.speed;
-
-        // Update facing angle
-        if (moveX !== 0 || moveY !== 0) {
-          player.facingAngle = Math.atan2(moveY, moveX);
-        }
-
-        // Apply friction
-        player.vx += moveX * deltaTime * 10;
-        player.vy += moveY * deltaTime * 10;
-        player.vx *= 0.9;
-        player.vy *= 0.9;
-      }
     }
-
-    // Handle dash cooldown
-    if (player.dashCooldown > 0) {
-      player.dashCooldown -= deltaTime;
-      if (player.dashCooldown <= 0) {
-        player.dashCooldown = 0;
-        player.canDash = true;
-      }
-    }
-
-    // Handle dash charge time and movement
-    if (player.isDashing) {
-      player.dashChargeTime += deltaTime;
-      if (player.dashChargeTime >= player.dashChargeDuration) {
-        // Start dash movement
-        player.dashDuration += deltaTime;
-        let dashSpeed = player.speed * player.dashSpeedMultiplier;
-        player.vx = dashSpeed * Math.cos(player.facingAngle);
-        player.vy = dashSpeed * Math.sin(player.facingAngle);
-        if (player.dashDuration >= player.dashActiveDuration) {
-          // End dash
-          player.isDashing = false;
-          player.dashChargeTime = 0;
-          player.dashDuration = 0;
-          player.dashCooldown = player.cooldownDuration;
-          player.vx = 0;
-          player.vy = 0;
-        }
-      }
-    }
-
-    // Update position
-    player.x += player.vx * deltaTime * 60;
-    player.y += player.vy * deltaTime * 60;
   });
-}
+});
+
+document.addEventListener("keyup", function (e) {
+  players.forEach((player, index) => {
+    let bindings = index === 0 ? keyBindings.player1 : keyBindings.player2;
+    if (e.key === bindings.up) {
+      player.up = false;
+    } else if (e.key === bindings.down) {
+      player.down = false;
+    } else if (e.key === bindings.left) {
+      player.left = false;
+    } else if (e.key === bindings.right) {
+      player.right = false;
+    }
+  });
+});
+
+// Listen for theme changes
+document.addEventListener("themeChanged", function () {
+  getCSSColors();
+});
+
+// Window resize event
+window.addEventListener("resize", resizeCanvas);
 
 // Initialize game
-function init() {
-  resizeCanvas();
-  getCSSColors();
-  resetPlayers();
-  updateScoreboard();
-  lastTime = performance.now();
-  updateGame(lastTime);
-}
-
-// Start the game
 init();
