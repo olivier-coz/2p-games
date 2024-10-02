@@ -1,1 +1,1 @@
-2 player games one my personnal website
+2 player games on my personnal website
