@@ -1,0 +1,31 @@
+<!-- games/platform-jumper/index.html -->
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Jump</title>
+        <link rel="stylesheet" href="/css/styles.css" />
+    </head>
+    <body>
+        <div id="header"></div>
+
+        <main>
+            <div class="game-container">
+                <div class="scoreboard">
+                    <span id="player1Score">Player 1: 0</span>
+                    <span id="separator" style="display: none">|</span>
+                    <span id="player2Score" style="display: none"
+                        >Player 2: 0</span
+                    >
+                </div>
+                <canvas id="gameCanvas"></canvas>
+                <div id="statusInfo"></div>
+                <div id="controlInfo"></div>
+            </div>
+        </main>
+
+        <div id="footer"></div>
+        <script src="/js/common.js"></script>
+        <script src="jump.js"></script>
+    </body>
+</html>

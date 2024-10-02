@@ -53,6 +53,12 @@ let answerButtons = [];
 for (let i = 0; i < 4; i++) {
   answerButtons.push(document.getElementById("answer" + i));
 }
+for (let i = 0; i < answerButtons.length; i++) {
+  answerButtons[i].addEventListener("click", function () {
+    if (!gameActive || answerSubmitted) return;
+    checkAnswer(0, i); // player 0 (Player 1) clicks the answer
+  });
+}
 let layoutToggleBtn = document.getElementById("layoutToggle");
 
 // Initialize the game
@@ -139,7 +145,11 @@ function resetGame() {
   scores = [0, 0];
   correctAnswerIndex = null;
   answerSubmitted = false;
-  updateScoreboard();
+  if (vsMode) {
+    updateScoreboard();
+  } else {
+    updateTimers(60);
+  }
   displayControls();
   statusInfo.innerHTML = "Press R to Start the Game";
 }
@@ -192,8 +202,8 @@ function startGameTimer() {
 
 function updateTimers(timeLeft) {
   document.getElementById("player1Score").textContent =
-    `${players[0].name}: ${scores[0]}   |   Timer: ${timeLeft}s`;
-  document.getElementById("player2Score").textContent = "";
+    `${players[0].name}: ${scores[0]}`;
+  document.getElementById("player2Score").textContent = `Timer: ${timeLeft}s`;
 }
 
 function updateScoreboard() {
@@ -203,7 +213,8 @@ function updateScoreboard() {
     document.getElementById("player2Score").textContent =
       `${players[1].name}: ${scores[1]}`;
   } else {
-    updateTimers(0);
+    document.getElementById("player1Score").textContent =
+      `${players[0].name}: ${scores[0]}`;
   }
 }
 // Display controls
@@ -366,9 +377,7 @@ function checkAnswer(player, answerIndex) {
     messageTimeout = setTimeout(function () {
       messageElement.innerHTML = "&nbsp;";
     }, 2000);
-    setTimeout(function () {
-      generateEquation();
-    }, 1000);
+    generateEquation();
   }
 }
 

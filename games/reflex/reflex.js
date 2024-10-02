@@ -88,6 +88,38 @@ let messageElement = document.getElementById("message");
 let arrowElement = document.getElementById("arrowElement"); // New element to display the arrow
 let rulesDisplay = document.getElementById("rulesDisplay"); // New element to display the rules
 let layoutToggleBtn = document.getElementById("layoutToggle");
+let answerButtons = [];
+for (let i = 0; i < 4; i++) {
+  answerButtons.push(document.getElementById("answer" + i));
+}
+// Add click event listeners to answer buttons
+for (let i = 0; i < answerButtons.length; i++) {
+  answerButtons[i].addEventListener("click", function () {
+    if (!gameActive || answerSubmitted) return;
+
+    // Map the button index to the corresponding direction
+    let inputDirection = null;
+    switch (i) {
+      case 0:
+        inputDirection = "up";
+        break;
+      case 1:
+        inputDirection = "left";
+        break;
+      case 2:
+        inputDirection = "down";
+        break;
+      case 3:
+        inputDirection = "right";
+        break;
+    }
+
+    // Optionally, highlight the selected button
+    answerButtons[i].classList.add("selected");
+
+    checkAnswer(0, inputDirection); // Player 1 (player index 0)
+  });
+}
 
 // Initialize the game
 function init() {
@@ -170,7 +202,11 @@ function init() {
 
 function resetGame() {
   // Reset variables
-  updateScoreboard();
+  if (vsMode) {
+    updateScoreboard();
+  } else {
+    updateTimers(60);
+  }
   gameActive = false;
   messageElement.innerHTML = "&nbsp;";
   clearInterval(gameTimer);
@@ -231,8 +267,8 @@ function startGameTimer() {
 
 function updateTimers(timeLeft) {
   document.getElementById("player1Score").textContent =
-    `${players[0].name}: ${scores[0]}   |   Timer: ${timeLeft}s`;
-  document.getElementById("player2Score").textContent = "";
+    `${players[0].name}: ${scores[0]}`;
+  document.getElementById("player2Score").textContent = `Timer: ${timeLeft}s`;
 }
 
 function updateScoreboard() {
@@ -242,7 +278,8 @@ function updateScoreboard() {
     document.getElementById("player2Score").textContent =
       `${players[1].name}: ${scores[1]}`;
   } else {
-    updateTimers(0);
+    document.getElementById("player1Score").textContent =
+      `${players[0].name}: ${scores[0]}`;
   }
 }
 
@@ -278,7 +315,13 @@ function generateRuleMapping() {
 
   // Assign a random direction for the "Always answer {direction}" rule
   for (let rule of shuffledRules) {
-    if (rule.ruleText === "{direction}") {
+    if (
+      (rule.ruleText === "{direction}") |
+      (rule.ruleText === "Up") |
+      (rule.ruleText === "Left") |
+      (rule.ruleText === "Down") |
+      (rule.ruleText === "Right")
+    ) {
       rule.fixedDirection =
         directions[Math.floor(Math.random() * directions.length)];
       rule.ruleText =
@@ -338,43 +381,6 @@ function displayCurrentRules() {
   rulesDisplay.innerHTML = rulesText;
 }
 
-// function checkAnswer(player, inputDirection) {
-//   if (!gameActive || answerSubmitted) return;
-//   answerSubmitted = true;
-
-//   // Get the rule for the arrow's color
-//   let ruleObj = currentRuleMapping[arrowColorKey];
-
-//   // Check if the answer is correct
-//   let isCorrect = ruleObj.check(arrowDirection, inputDirection, ruleObj);
-
-//   if (isCorrect) {
-//     scores[player]++;
-//     totalPointsAwarded++;
-//     messageElement.textContent = `${players[player].name} is correct!`;
-//   } else {
-//     scores[player]--;
-//     messageElement.textContent = `${players[player].name} is incorrect!`;
-//   }
-//   updateScoreboard();
-
-//   // Check if we need to change the rules
-//   if (totalPointsAwarded > 0 && totalPointsAwarded % 5 === 0) {
-//     generateRuleMapping();
-//   }
-
-//   if (gameActive) {
-//     clearTimeout(messageTimeout);
-//     messageTimeout = setTimeout(function () {
-//       messageElement.innerHTML = "&nbsp;";
-//     }, 2000);
-//     setTimeout(function () {
-//       generateArrow();
-//     }, 1000);
-//   }
-// }
-//
-//
 function checkAnswer(player, inputDirection) {
   if (!gameActive || answerSubmitted) return;
   answerSubmitted = true;

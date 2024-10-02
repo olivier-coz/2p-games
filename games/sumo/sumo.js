@@ -42,8 +42,8 @@ let players = [
     dashDuration: 0,
     dashSpeedMultiplier: 3,
     dashChargeDuration: 0.1,
-    dashActiveDuration: 0.2,
-    cooldownDuration: 0.5,
+    dashActiveDuration: 0.15,
+    cooldownDuration: 1,
     facingAngle: 0,
   },
   {

@@ -71,7 +71,6 @@ fetch("words.txt")
 function init() {
   getCSSColors();
   resetGame();
-  updateScoreboard();
   displayControls();
   // Event listeners
   submitBtn.addEventListener("click", submitWord);
@@ -99,7 +98,7 @@ function resetGame() {
   letters = [];
   gameActive = false;
   usedWords = new Set();
-  playerTimers = vsMode ? [45, 45] : [60];
+  playerTimers = vsMode ? [60, 60] : [60];
   scores = [0, 0];
   currentPlayer = 0;
   winnerMessage.innerHTML = "&nbsp;";
@@ -110,11 +109,11 @@ function resetGame() {
   clearInterval(gameTimer);
   statusInfo.textContent = "Press R to Start the Game";
   displayControls();
-  updateScoreboard();
+  updateTimers();
 }
 
 function startCountdown() {
-  countdown = 15;
+  countdown = 10;
   gameActive = false;
   generateLetters();
   displayLetters();
@@ -242,13 +241,14 @@ function startPlayerTimer() {
 function updateTimers() {
   if (vsMode) {
     document.getElementById("player1Score").textContent =
-      `${players[0].name}: ${scores[0]} | Timer: ${playerTimers[0]}s`;
+      `${players[0].name}: ${playerTimers[0]}s`;
     document.getElementById("player2Score").textContent =
-      `${players[1].name}: ${scores[1]} | Timer: ${playerTimers[1]}s`;
+      `${players[1].name}: ${playerTimers[1]}s`;
   } else {
     document.getElementById("player1Score").textContent =
-      `${players[0].name}: ${scores[0]} | Timer: ${playerTimers[0]}s`;
-    document.getElementById("player2Score").textContent = "";
+      `${players[0].name}: ${scores[0]}`;
+    document.getElementById("player2Score").textContent =
+      `Timer: ${playerTimers[0]}s`;
   }
 }
 
@@ -289,7 +289,7 @@ function submitWord() {
     usedWords.add(word);
     messageElement.textContent = `${players[currentPlayer].name} submitted a valid word!`;
     scores[currentPlayer]++;
-    updateScoreboard();
+    updateTimers();
     if (vsMode) {
       // Switch to other player
       currentPlayer = currentPlayer === 0 ? 1 : 0;
@@ -337,19 +337,6 @@ function isValidWord(word) {
     }
   }
   return true;
-}
-
-function updateScoreboard() {
-  if (vsMode) {
-    document.getElementById("player1Score").textContent =
-      `${players[0].name}: ${scores[0]} | Timer: ${playerTimers[0]}s`;
-    document.getElementById("player2Score").textContent =
-      `${players[1].name}: ${scores[1]} | Timer: ${playerTimers[1]}s`;
-  } else {
-    document.getElementById("player1Score").textContent =
-      `${players[0].name}: ${scores[0]} | Timer: ${playerTimers[0]}s`;
-    document.getElementById("player2Score").textContent = "";
-  }
 }
 
 function displayControls() {
